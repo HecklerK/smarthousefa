@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">умный дом Ya</string>
+    <string name="login">Войти</string>
+    <string name="logged_in">Вход выполнен</string>
+    <string name="avatar_image">Аватар</string>
+    <string name="logout">Выйти</string>
+</resources>
