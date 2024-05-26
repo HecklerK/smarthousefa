@@ -8,13 +8,19 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
-import coil.load
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
+import com.hecklerk.smarthousefa.adapters.DeviceAdapter
+import com.hecklerk.smarthousefa.data.Device
 import com.hecklerk.smarthousefa.databinding.ActivityMainBinding
 import com.hecklerk.smarthousefa.ui.YaAuthViewModel
+import com.hecklerk.smarthousefa.ui.YaIotViewModel
 import com.yandex.authsdk.YandexAuthException
 import com.yandex.authsdk.YandexAuthLoginOptions
 import com.yandex.authsdk.YandexAuthSdk
 import com.yandex.authsdk.YandexAuthToken
+import okhttp3.internal.notifyAll
 
 @Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
@@ -29,9 +35,13 @@ class MainActivity : AppCompatActivity() {
     private val REQUEST_LOGIN_SDK: Int = 1
     private var token: String = ""
 
-    private val viewModel: YaAuthViewModel by viewModels(factoryProducer = { YaAuthViewModel.Factory })
+    private val authViewModel: YaAuthViewModel by viewModels(factoryProducer = { YaAuthViewModel.Factory })
+    private val iotViewModel: YaIotViewModel by viewModels(factoryProducer = {YaIotViewModel.Factory})
 
     private lateinit var sP: SharedPreferences
+
+    private lateinit var devicesList: List<Device>
+    private lateinit var adapter: DeviceAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,11 +49,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(_binding.root)
         setLoginButton()
         hideInfoFields()
+        devicesList = emptyList()
 
         sP = getPreferences(Context.MODE_PRIVATE)
         token = sP.getString("token", "").toString()
 
-        viewModel.userInfo.observe(this@MainActivity) {
+        adapter = DeviceAdapter(devicesList)
+        _binding.devicesList.layoutManager = LinearLayoutManager(_binding.root.context)
+        _binding.devicesList.adapter = adapter
+
+        authViewModel.userInfo.observe(this@MainActivity) {
             _binding.loginButton.text = getString(R.string.logout)
             showInfoFields()
 
@@ -52,10 +67,20 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        iotViewModel.userInfo.observe(this@MainActivity) {
+            it.let {
+                devicesList = it.devices
+                adapter.setData(devicesList)
+                adapter.notifyDataSetChanged()
+            }
+        }
+
         if (token.isEmpty())
             setLoginButton()
-        else
-            viewModel.getUserInformation(token)
+        else {
+            authViewModel.getUserInformation(token)
+            iotViewModel.getIotInformation(token)
+        }
     }
 
     private fun hideInfoFields() {
@@ -98,7 +123,8 @@ class MainActivity : AppCompatActivity() {
                         putString("token", token.value)
                         apply()
                     }
-                    viewModel.getUserInformation(this.token)
+                    authViewModel.getUserInformation(this.token)
+                    iotViewModel.getIotInformation(this.token)
                 }
             } catch (e: YandexAuthException) {
                 e.message?.let { Log.e("Authorization", it) }

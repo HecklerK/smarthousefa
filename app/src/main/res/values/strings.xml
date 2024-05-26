@@ -4,4 +4,5 @@
     <string name="logged_in">Logged in</string>
     <string name="avatar_image">Avatar image</string>
     <string name="logout">Logout</string>
+    <string name="state">State</string>
 </resources>
