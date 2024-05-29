@@ -9,10 +9,10 @@ import android.util.Log
 import android.view.View
 import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.hecklerk.smarthousefa.adapters.DeviceAdapter
 import com.hecklerk.smarthousefa.data.Device
+import com.hecklerk.smarthousefa.data.SetStateDevice
+import com.hecklerk.smarthousefa.data.SetStateDeviceRequest
 import com.hecklerk.smarthousefa.databinding.ActivityMainBinding
 import com.hecklerk.smarthousefa.ui.YaAuthViewModel
 import com.hecklerk.smarthousefa.ui.YaIotViewModel
@@ -20,7 +20,6 @@ import com.yandex.authsdk.YandexAuthException
 import com.yandex.authsdk.YandexAuthLoginOptions
 import com.yandex.authsdk.YandexAuthSdk
 import com.yandex.authsdk.YandexAuthToken
-import okhttp3.internal.notifyAll
 
 @Suppress("DEPRECATION")
 class MainActivity : AppCompatActivity() {
@@ -42,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var devicesList: List<Device>
     private lateinit var adapter: DeviceAdapter
+    private var selectDevice: Device? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,6 +75,23 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        iotViewModel.deviceSetState.observe(this@MainActivity) {
+            it.let {
+                if (it.payload.last().capabilities.last().state.actionResult.status == "DONE" && selectDevice != null){
+                    iotViewModel.getIotInformation(token)
+                }
+            }
+        }
+
+        adapter.setOnClickListener(object : DeviceAdapter.OnClickListener{
+            override fun onClick(position: Int, model: Device) {
+                if (model != null){
+                    selectDevice = model
+                    iotViewModel.getIotInformation(token)
+                }
+            }
+        })
+
         if (token.isEmpty())
             setLoginButton()
         else {
@@ -89,6 +106,30 @@ class MainActivity : AppCompatActivity() {
 
     private fun showInfoFields() {
         _binding.fullNameTextView.visibility = View.VISIBLE
+    }
+
+    private fun setStateButton() {
+        if (selectDevice != null){
+            _binding.stateButton.visibility = View.VISIBLE
+            var text = ""
+            if (selectDevice!!.capabilities.last { it.state.instance == "on" }.state.value == "true")
+                text = getString(R.string.state_off)
+            else
+                text = getString(R.string.state_on)
+
+            _binding.stateButton.text = text
+            _binding.stateButton.setOnClickListener {
+                var cap = selectDevice!!.capabilities.last { it.state.instance == "on" }
+                if (selectDevice!!.capabilities.last { it.state.instance == "on" }.state.value == "true")
+                    cap!!.state.value = "false"
+                else
+                    cap!!.state.value = "true"
+                var listCap = listOf(cap)
+                var listDevice = listOf(SetStateDevice(selectDevice!!.id, listCap))
+                val device = SetStateDeviceRequest(listDevice)
+                iotViewModel.setDeviceState(token, device)
+            }
+        }
     }
 
     private fun setLoginButton() {
@@ -109,6 +150,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 hideInfoFields()
                 _binding.loginButton.text = getString(R.string.login)
+                devicesList = emptyList()
+                adapter.setData(devicesList)
+                adapter.notifyDataSetChanged()
             }
         }
     }

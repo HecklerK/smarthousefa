@@ -7,8 +7,12 @@ import com.yandex.authsdk.YandexAuthOptions
 import com.yandex.authsdk.YandexAuthSdk
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Url
 
 interface AppDataContainer {
     val loginSdk: YandexAuthSdk
@@ -57,4 +61,7 @@ interface YaAuthApiService {
 interface YaIotApiService {
     @GET("user/info")
     suspend fun getUserInfo(@Header("Authorization") authToken: String): IotInfoUser
+
+    @POST("user/devices/action")
+    suspend fun setStateDevice(@Header("Authorization") authToken: String, @Body body: SetStateDeviceRequest): SetStateDeviceResponse
 }

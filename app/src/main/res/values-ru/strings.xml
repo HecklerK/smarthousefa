@@ -5,4 +5,6 @@
     <string name="avatar_image">Аватар</string>
     <string name="logout">Выйти</string>
     <string name="state">Состояние</string>
+    <string name="state_on">Включить</string>
+    <string name="state_off">Выключить</string>
 </resources>
