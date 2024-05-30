@@ -77,8 +77,9 @@ class MainActivity : AppCompatActivity() {
 
         iotViewModel.deviceSetState.observe(this@MainActivity) {
             it.let {
-                if (it.payload.last().capabilities.last().state.actionResult.status == "DONE" && selectDevice != null){
+                if (it.devices.last().capabilities.last().state.actionResult.status == "DONE" && selectDevice != null){
                     iotViewModel.getIotInformation(token)
+                    setStateButton()
                 }
             }
         }
@@ -87,7 +88,7 @@ class MainActivity : AppCompatActivity() {
             override fun onClick(position: Int, model: Device) {
                 if (model != null){
                     selectDevice = model
-                    iotViewModel.getIotInformation(token)
+                    setStateButton()
                 }
             }
         })
@@ -112,18 +113,29 @@ class MainActivity : AppCompatActivity() {
         if (selectDevice != null){
             _binding.stateButton.visibility = View.VISIBLE
             var text = ""
-            if (selectDevice!!.capabilities.last { it.state.instance == "on" }.state.value == "true")
+
+            if (selectDevice!!.capabilities.size == 0)
+                text = getString(R.string.state)
+            else if (selectDevice!!.capabilities.last { it.state.instance == "on" }!!.state.value == true)
                 text = getString(R.string.state_off)
             else
                 text = getString(R.string.state_on)
 
             _binding.stateButton.text = text
+
+            if (text == getString(R.string.state)) {
+                _binding.stateButton.setOnClickListener{}
+                return
+            }
+
             _binding.stateButton.setOnClickListener {
                 var cap = selectDevice!!.capabilities.last { it.state.instance == "on" }
-                if (selectDevice!!.capabilities.last { it.state.instance == "on" }.state.value == "true")
-                    cap!!.state.value = "false"
+
+                if (selectDevice!!.capabilities.last { it.state.instance == "on" }.state.value == true)
+                    cap!!.state.value = false
                 else
-                    cap!!.state.value = "true"
+                    cap!!.state.value = true
+
                 var listCap = listOf(cap)
                 var listDevice = listOf(SetStateDevice(selectDevice!!.id, listCap))
                 val device = SetStateDeviceRequest(listDevice)

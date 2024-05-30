@@ -1,6 +1,7 @@
 package com.hecklerk.smarthousefa.data
 
 import com.squareup.moshi.Json
+import org.json.JSONObject
 
 data class IotInfoUser (
     @Json(name = "status") val status: String,
@@ -21,7 +22,7 @@ data class Capability (
 
 data class StateCapability (
     @Json(name = "instance") val instance: String,
-    @Json(name = "value") var value: String
+    @Json(name = "value") var value: Any
 )
 
 data class SetStateDeviceRequest(
@@ -35,7 +36,7 @@ data class SetStateDevice(
 
 data class SetStateDeviceResponse(
     @Json(name = "request_id") val requestId: String,
-    @Json(name = "payload") val payload: List<DeviceSetState>
+    @Json(name = "devices") val devices: List<DeviceSetState>
 )
 
 data class DeviceSetState(
